@@ -25,6 +25,7 @@ import Layout from '../layouts/Layout.astro'
   import L from 'leaflet'
   import 'leaflet/dist/leaflet.css'
   const jungleData = await import('../data/jungle.json').then((m) => m.default)
+  const jungleTimer = { tier1: 240, tier2: 360, tier3: 480 }
 
   const map = L.map('map', {
     crs: L.CRS.Simple,
@@ -83,24 +84,25 @@ import Layout from '../layouts/Layout.astro'
         startTimer(timeLeft, id)
       })
       .addTo(map)
-  }
 
-  let timerInterval: any
-  function startTimer(timeLeft: number, id: number) {
-    const $text = document.querySelector(
-      `#timerText-${id} h3`
-    ) as HTMLHeadingElement
-    updateTimerText(timeLeft, id)
-    clearInterval(timerInterval)
-    timerInterval = setInterval(function () {
-      timeLeft -= 1
-      updateTimerText(timeLeft, id)
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval)
-        $text.innerText = ''
-        endSound.play()
+    let timerInterval: number | undefined
+    function startTimer(timeLeft: number, id: number) {
+      const $text = document.querySelector(
+        `#timerText-${id} h3`
+      ) as HTMLHeadingElement
+
+      function update() {
+        timeLeft -= 1
+        updateTimerText(timeLeft, id)
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval)
+          $text.innerText = 'X'
+          return endSound.play()
+        }
+        timerInterval = setTimeout(update, 1000)
       }
-    }, 1000)
+      update()
+    }
   }
 
   function updateTimerText(timeLeft: number, id: number) {
@@ -124,8 +126,8 @@ import Layout from '../layouts/Layout.astro'
     })
   })
 
-  jungleData.map(({ id, lat, lng, timer }) => {
-    addCircleWithTimer(id, lat, lng, timer)
+  jungleData.map(({ lat, lng, timer }, id) => {
+    addCircleWithTimer(id, lat, lng, (jungleTimer as any)[timer])
   })
 </script>
 
